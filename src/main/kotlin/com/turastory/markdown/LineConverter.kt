@@ -17,23 +17,21 @@ fun LineConverter(classifier: Classifier, rules: Map<Type, LineConversionRule>):
             rules[type]?.invoke(line) ?: listOf(line)
         }
 
-        var skipConversion = false
-
-        // TODO: Refactor this - not to use state variable
-        return lines.flatMap { line ->
+        return lines.fold(Pair(false, listOf<String>())) { (skipConversion, result), line ->
             val type = classifier(line)
             if (skipConversion) {
                 if (type == Type.Code) {
-                    skipConversion = false
-                    convertWithType(line)
+                    Pair(false, result + convertWithType(line))
                 } else {
-                    listOf(line)
+                    Pair(skipConversion, result + listOf(line))
                 }
             } else {
-                if (type == Type.Code)
-                    skipConversion = true
-                convertWithType(line)
+                if (type == Type.Code) {
+                    Pair(true, result + convertWithType(line))
+                } else {
+                    Pair(skipConversion, result + convertWithType(line))
+                }
             }
-        }
+        }.second
     }
 }
